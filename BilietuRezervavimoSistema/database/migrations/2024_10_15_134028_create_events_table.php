@@ -11,13 +11,14 @@ class CreateEventsTable extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('description')->nullable();
-            $table->date('date');
+            $table->date('start_date');
             $table->time('start_time');
+            $table->date('end_date');
             $table->time('end_time');
-            $table->foreignId('place_id')->constrained('places')->onDelete('cascade');
+            $table->foreignId('place_id')->constrained('places')->onDelete(action: 'cascade');
             $table->decimal('price', 8, 2);
             $table->integer('max_tickets')->unsigned();
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }

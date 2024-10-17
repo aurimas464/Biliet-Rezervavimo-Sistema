@@ -36,7 +36,8 @@ class PlaceController extends Controller
 
     public function create(Request $request)
     {
-        $requiredFields = ['name',
+        $requiredFields = [
+            'name',
             'address',
             'city',
             'postal_code',
@@ -45,7 +46,7 @@ class PlaceController extends Controller
         ];
 
         $missingFields = array_diff($requiredFields, array_keys($request->all()));
-        if (!empty($extraFields) || !empty($missingFields)) {
+        if (!empty($missingFields)) {
             return response()->json([
                 'message' => 'Bad Request.',
                 'missing_fields' => $missingFields
@@ -53,6 +54,7 @@ class PlaceController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
+            'id' => 'nullable|integer',
             'name' => 'string|max:191',
             'address' => 'string|max:191',
             'city' => 'string|max:191',
@@ -70,19 +72,40 @@ class PlaceController extends Controller
         }
 
         $data = $validator->validated();
-        $sql = "INSERT INTO places (name, address, city, postal_code, country, capacity, created_at, updated_at) 
-            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
+        if (isset($data['id'])) {
+            $existingPlace = DB::table('places')->where('id', $data['id'])->first();
+            if ($existingPlace) {
+                return response()->json([
+                    'message' => 'Conflict: A place with the given id already exists.',
+                    'id' => $data['id']
+                ], 409);
+            }
 
-        DB::insert($sql, [
-            $data['name'], 
-            $data['address'], 
-            $data['city'], 
-            $data['postal_code'], 
-            $data['country'], 
-            $data['capacity']
-        ]);
-        
+            $sql = "INSERT INTO places (id, name, address, city, postal_code, country, capacity, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            DB::insert($sql, [
+                $data['id'], 
+                $data['name'], 
+                $data['address'], 
+                $data['city'], 
+                $data['postal_code'], 
+                $data['country'], 
+                $data['capacity']
+            ]);
+        } else {
+            $sql = "INSERT INTO places (name, address, city, postal_code, country, capacity, created_at, updated_at) 
+                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            DB::insert($sql, [
+                $data['name'], 
+                $data['address'], 
+                $data['city'], 
+                $data['postal_code'], 
+                $data['country'], 
+                $data['capacity']
+            ]);
+        }
+
         return response()->json([
             'message' => 'Place created successfully',
             'data' => $data
@@ -137,14 +160,4 @@ class PlaceController extends Controller
         return response()->json(null, 204);
     }
 
-    public function getEventsByPlace($placeId)
-{
-    $events = DB::select('SELECT * FROM events WHERE place_id = ?', [$placeId]);
-
-    if (empty($events)) {
-        return response()->json(['message' => 'No events found for this place.'], 404);
-    }
-
-    return response()->json($events, 200);
-}
 }

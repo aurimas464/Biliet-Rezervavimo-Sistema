@@ -30,13 +30,13 @@ class EventController extends Controller
     {
         $requiredFields = [
             'name',
-            'date',
+            'start_date',
             'start_time',
+            'end_date',
             'end_time',
             'place_id',
             'price',
             'max_tickets',
-            'status',
         ];
     
         $missingFields = array_diff($requiredFields, array_keys($request->all()));
@@ -48,14 +48,15 @@ class EventController extends Controller
         }
     
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:191',
-            'date' => 'required|date',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'place_id' => 'required|exists:places,id',
-            'price' => 'required|numeric|min:0',
-            'max_tickets' => 'required|integer|min:1',
-            'status' => 'required|string|in:upcoming,ongoing,completed',
+            'id' => 'nullable|integer',
+            'name' => 'string|max:191',
+            'start_date' => 'date',
+            'start_time' => 'date_format:H:i',
+            'end_date' => 'date',
+            'end_time' => 'date_format:H:i',
+            'place_id' => 'exists:places,id',
+            'price' => 'numeric|min:0',
+            'max_tickets' => 'integer|min:1',
             'description' => 'nullable|string',
         ]);
     
@@ -68,27 +69,55 @@ class EventController extends Controller
         }
     
         $data = $validator->validated();
-    
-        $sql = "INSERT INTO events (name, description, date, start_time, end_time, place_id, price, max_tickets, status, created_at, updated_at) 
+
+        if (isset($data['id'])) {
+            $existingEvent = DB::table('events')->where('id', $data['id'])->first();
+            if ($existingEvent) {
+                return response()->json([
+                    'message' => 'Conflict: An event with the given id already exists.',
+                    'id' => $data['id']
+                ], 409);
+            }
+
+            $sql = "INSERT INTO events (id, name, start_date, start_time, end_date, end_time, place_id, price, max_tickets, description, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+
+            DB::insert($sql, [
+                $data['id'], 
+                $data['name'],
+                $data['start_date'],
+                $data['start_time'],
+                $data['end_date'],
+                $data['end_time'],
+                $data['place_id'],
+                $data['price'],
+                $data['max_tickets'],
+                $data['description'] ?? null,
+            ]);
+        }
+        else{
+            $sql = "INSERT INTO events (name, start_date, start_time, end_date, end_time, place_id, price, max_tickets, description, created_at, updated_at) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
-    
-        DB::insert($sql, [
-            $data['name'],
-            $data['description'] ?? null,
-            $data['date'],
-            $data['start_time'],
-            $data['end_time'],
-            $data['place_id'],
-            $data['price'],
-            $data['max_tickets'],
-            $data['status'],
-        ]);
+
+            DB::insert($sql, [
+                $data['name'],
+                $data['start_date'],
+                $data['start_time'],
+                $data['end_date'],
+                $data['end_time'],
+                $data['place_id'],
+                $data['price'],
+                $data['max_tickets'],
+                $data['description'] ?? null,
+            ]);
+        }
     
         return response()->json([
             'message' => 'Event created successfully',
             'data' => $data,
         ], 201);
     }
+
 
     public function update(Request $request, $id)
     {
@@ -100,30 +129,30 @@ class EventController extends Controller
 
         $validatedData = $request->validate([
             'name' => 'string|max:191',
-            'date' => 'date',
+            'start_date' => 'date',
             'start_time' => 'date_format:H:i',
+            'end_date' => 'date',
             'end_time' => 'date_format:H:i',
             'place_id' => 'exists:places,id',
             'price' => 'numeric|min:0',
-            'description' => 'nullable|string',
             'max_tickets' => 'integer|min:1',
-            'status' => 'string|in:upcoming,ongoing,completed',
+            'description' => 'nullable|string',
         ]);
 
         $sql = "UPDATE events 
-                SET name = ?, description = ?, date = ?, start_time = ?, end_time = ?, place_id = ?, price = ?, max_tickets = ?, status = ?, updated_at = NOW()
+                SET name = ?, start_date = ?, start_time = ?, end_date = ?, end_time = ?, place_id = ?, price = ?, max_tickets = ?, description = ?, updated_at = NOW()
                 WHERE id = ?";
 
         DB::update($sql, [
             $validatedData['name'] ?? $event[0]->name,
-            $validatedData['description'] ?? $event[0]->description,
-            $validatedData['date'] ?? $event[0]->date,
+            $validatedData['start_date'] ?? $event[0]->start_date,
             $validatedData['start_time'] ?? $event[0]->start_time,
+            $validatedData['end_date'] ?? $event[0]->end_date,
             $validatedData['end_time'] ?? $event[0]->end_time,
             $validatedData['place_id'] ?? $event[0]->place_id,
             $validatedData['price'] ?? $event[0]->price,
             $validatedData['max_tickets'] ?? $event[0]->max_tickets,
-            $validatedData['status'] ?? $event[0]->status,
+            $validatedData['description'] ?? $event[0]->description,
             $id
         ]);
 
@@ -141,5 +170,16 @@ class EventController extends Controller
         DB::delete('DELETE FROM events WHERE id = ?', [$id]);
 
         return response()->json(null, 204);
+    }
+
+    public function getEventsByPlace($placeId)
+    {
+        $events = DB::select('SELECT * FROM events WHERE place_id = ?', [$placeId]);
+
+        if (empty($events)) {
+            return response()->json(['message' => 'No events found for this place.'], 404);
+        }
+
+        return response()->json($events, 200);
     }
 }

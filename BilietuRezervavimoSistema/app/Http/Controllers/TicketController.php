@@ -27,13 +27,29 @@ class TicketController extends Controller
 
     public function create(Request $request)
     {
+        $requiredFields = [
+            'event_id',
+            'user_id',
+            'purchase_date',
+            'price',
+        ];
+
+        $missingFields = array_diff($requiredFields, array_keys($request->all()));
+        if (!empty($missingFields)) {
+            return response()->json([
+                'message' => 'Bad Request.',
+                'missing_fields' => $missingFields
+            ], 400);
+        }
+
         $validator = Validator::make($request->all(), [
-            'event_id' => 'required|exists:events,id',
-            'user_id' => 'required|integer',
+            'id' => 'nullable|integer',
+            'event_id' => 'exists:events,id',
+            'user_id' => 'integer',
             'status' => 'string|in:active,inactive,cancelled',
-            'purchase_date' => 'required|date',
+            'purchase_date' => 'date',
             'seat_number' => 'nullable|string|max:10',
-            'price' => 'required|numeric|min:0',
+            'price' => 'numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -45,17 +61,41 @@ class TicketController extends Controller
         }
 
         $data = $validator->validated();
-        $sql = "INSERT INTO tickets (event_id, user_id, status, purchase_date, seat_number, price, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
 
-        DB::insert($sql, [
-            $data['event_id'],
-            $data['user_id'],
-            $data['status'] ?? 'active',
-            $data['purchase_date'],
-            $data['seat_number'] ?? null,
-            $data['price'],
-        ]);
+
+        if (isset($data['id'])) {
+            $existingPlace = DB::table('tickets')->where('id', $data['id'])->first();
+            if ($existingPlace) {
+                return response()->json([
+                    'message' => 'Conflict: A ticket with the given id already exists.',
+                    'id' => $data['id']
+                ], 409);
+            }
+
+            $sql = "INSERT INTO tickets (id, event_id, user_id, status, purchase_date, seat_number, price, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
+
+            DB::insert($sql, [
+                $data['id'], 
+                $data['event_id'], 
+                $data['user_id'], 
+                $data['status'], 
+                $data['purchase_date'], 
+                $data['seat_number'] ?? null, 
+                $data['price']
+            ]);
+        } else {
+            $sql = "INSERT INTO tickets (event_id, user_id, status, purchase_date, seat_number, price, created_at, updated_at) 
+                            VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())";
+            DB::insert($sql, [
+                $data['event_id'], 
+                $data['user_id'], 
+                $data['status'], 
+                $data['purchase_date'], 
+                $data['seat_number'] ?? null, 
+                $data['price']
+            ]);
+        }
 
         return response()->json([
             'message' => 'Ticket created successfully',
@@ -74,7 +114,7 @@ class TicketController extends Controller
         $validatedData = $request->validate([
             'event_id' => 'exists:events,id',
             'user_id' => 'integer',
-            'status' => 'string|in:active,inactive,cancelled',
+            'status' => 'nullable|string|in:active,inactive,cancelled',
             'purchase_date' => 'date',
             'seat_number' => 'nullable|string|max:10',
             'price' => 'numeric|min:0',
