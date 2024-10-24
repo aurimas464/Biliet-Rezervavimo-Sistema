@@ -60,7 +60,7 @@ class EventController extends Controller
             $existingEvent = DB::table('events')->where('id', $data['id'])->first();
             if ($existingEvent) {
                 return response()->json([
-                    'message' => 'Conflict: An event with the given id already exists.',
+                    'message' => 'Conflict: An event with the given ID already exists.',
                     'id' => $data['id']
                 ], 409);
             }

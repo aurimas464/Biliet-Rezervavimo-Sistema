@@ -73,7 +73,7 @@ class TicketController extends Controller
             $existingTicket = DB::table('tickets')->where('id', $data['id'])->first();
             if ($existingTicket) {
                 return response()->json([
-                    'message' => 'Conflict: A ticket with the given id already exists.',
+                    'message' => 'Conflict: A ticket with the given ID already exists.',
                     'id' => $data['id']
                 ], 409);
             }
@@ -128,7 +128,7 @@ class TicketController extends Controller
     
         $validator = Validator::make($request->all(), [
             'user_id' => 'integer',
-            'status' => 'nullable|string|in:active,inactive,cancelled',
+            'status' => 'string|in:active,inactive,cancelled',
             'purchase_date' => 'date',
             'seat_number' => 'nullable|string|max:10',
             'price' => 'numeric|min:0',

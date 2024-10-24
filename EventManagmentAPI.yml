@@ -1,0 +1,979 @@
+openapi: 3.0.0
+info:
+  title: Event Management API
+  description: API for managing places, events and tickets.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8000/api
+
+paths:
+  /vieta:
+    get:
+      summary: Retrieves a list of all places
+      tags:
+        - vieta
+      responses:
+        '200':
+          description: A list of places
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Place'
+              example:
+              - id: 1
+                name: "Test place 1"
+                address: "Street"
+                city: "Kaunas"
+                postal_code: "LT-0000"
+                country: "Lithuania"
+                capacity: 100
+                created_at: "2024-10-18 11:05:08"
+                updated_at: "2024-10-18 11:05:08"
+              - id: 2
+                name: "Test place 2"
+                address: "Street"
+                city: "Vilnius"
+                postal_code: "LT-5555"
+                country: "Lithuania"
+                capacity: 200
+                created_at: "2024-10-20 01:01:01"
+                updated_at: "2024-10-21 05:05:05"
+    post:
+      summary: Adds a new place
+      tags:
+        - vieta
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceCreateRequest'
+            example:
+              name: "Test place 1"
+              address: "Street"
+              city: "City"
+              postal_code: "LT-0000"
+              country: "Lithuania"
+              capacity: 100
+      responses:
+        '201':
+          description: Place created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Place created successfully"
+                  data:
+                    type: object
+                    $ref: '#/components/schemas/Place'
+              example:
+                message: "Place created successfully"
+                data:
+                  name: "Test place 1"
+                  address: "Street"
+                  city: "City"
+                  postal_code: "LT-0000"
+                  country: "Lithuania"
+                  capacity: 100
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  name:
+                    - "The name field is required."
+                  capacity:
+                    - "The capacity field must be at least 1."
+        '409':
+          description: A conflict occurred
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Conflict: A place with the given ID already exists."
+
+  /vieta/{vietaID}:
+    get:
+      summary: Get a specific place by ID
+      tags:
+        - vieta
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A place object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+              example:
+                id: 1
+                name: "Test place 1"
+                address: "Street"
+                city: "Kaunas"
+                postal_code: "LT-0000"
+                country: "Lithuania"
+                capacity: 100
+                created_at: "2024-10-18 11:05:08"
+                updated_at: "2024-10-18 11:05:08"
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    patch:
+      summary: Update a specific place by ID
+      tags:
+        - vieta
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceUpdateRequest'
+            example:
+              name: "Updated Place Name"
+              capacity: 400
+      responses:
+        '200':
+          description: Place updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Place updated successfully"
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  capacity:
+                    - "The capacity must be at least 1."
+    delete:
+      summary: Delete a specific place by ID
+      tags:
+        - vieta
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Place deleted successfully, no content is returned.
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /vieta/{vietaID}/renginys:
+    get:
+      summary: Retrieves a list of all events for a specific place
+      tags:
+        - renginys
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+              example:
+                - id: 1
+                  name: "New Year Event"
+                  start_date: "2024-12-31"
+                  start_time: "20:00"
+                  end_date: "2025-01-01"
+                  end_time: "02:00"
+                  place_id: 3
+                  price: 50.00
+                  max_tickets: 100
+                  description: "Hello"
+                  created_at: "2024-10-18 11:05:08"
+                  updated_at: "2024-10-18 11:05:08"
+                - id: 2
+                  name: "Christmas Event"
+                  start_date: "2024-12-24"
+                  start_time: "18:00"
+                  end_date: "2024-12-25"
+                  end_time: "01:00"
+                  place_id: 3
+                  price: 40.00
+                  max_tickets: 200
+                  description: NULL
+                  created_at: "2024-10-19 11:00:00"
+                  updated_at: "2024-10-19 11:00:00"
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      summary: Adds a new event to a specific place
+      tags:
+        - renginys
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventCreateRequest'
+            example:
+              name: "New Year Event"
+              start_date: "2024-12-31"
+              start_time: "20:00"
+              end_date: "2025-01-01"
+              end_time: "02:00"
+              price: 50.00
+              max_tickets: 100
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Event created successfully"
+                  data:
+                    $ref: '#/components/schemas/Event'
+              example:
+                message: "Event created successfully"
+                data:
+                  name: "New Year Event"
+                  start_date: "2024-12-31"
+                  start_time: "20:00"
+                  end_date: "2025-01-01"
+                  end_time: "02:00"
+                  price: 50.00
+                  max_tickets: 100
+                  place_id: 3
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  name:
+                    - "The name field is required."
+                  start_time:
+                    - "The start time field must match the format H:i."
+                  end_date:
+                    - "The end date field must be a valid date."
+                  price:
+                    - "The price field must be at least 0."
+        '409':
+          description: A conflict occurred
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Conflict: An event with the given ID already exists."
+
+  /vieta/{vietaID}/renginys/{renginysID}:
+    get:
+      summary: Retrieves a specific event by ID for a place
+      tags:
+        - renginys
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+              example:
+                id: 1
+                place_id: 3
+                name: "New Year Event"
+                start_date: "2024-12-31"
+                start_time: "20:00"
+                end_date: "2025-01-01"
+                end_time: "02:00"
+                price: 50.00
+                max_tickets: 100
+                created_at: "2024-10-18 11:05:08"
+                updated_at: "2024-10-18 11:05:08"
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    patch:
+      summary: Updates a specific event by ID
+      tags:
+        - renginys
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventUpdateRequest'
+            example:
+              name: "Updated Event Name"
+              max_tickets: 500
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Event updated successfully"
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  price:
+                    - "The price field must be at least 0."
+
+    delete:
+      summary: Deletes a specific event by ID
+      tags:
+        - renginys
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Event deleted successfully, no content is returned.
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /vieta/{vietaID}/renginys/{renginysID}/bilietas:
+    get:
+      summary: Retrieves a list of all tickets for a specific event at a specific place
+      tags:
+        - bilietas
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+              example:
+                - id: 1
+                  event_id: 3
+                  user_id: 1
+                  status: "active"
+                  purchase_date: "2024-12-01"
+                  seat_number: "A12"
+                  price: 50.00
+                  created_at: "2024-10-18 11:05:08"
+                  updated_at: "2024-10-18 11:05:08"
+                - id: 2
+                  event_id: 3
+                  user_id: 1
+                  status: "cancelled"
+                  purchase_date: "2024-12-01"
+                  seat_number: "A13"
+                  price: 40.00
+                  created_at: "2024-10-19 11:00:00"
+                  updated_at: "2024-10-19 11:00:00"
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    post:
+      summary: Adds a new ticket to a specific event at a specific place
+      tags:
+        - bilietas
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+            example:
+              user_id: 1
+              status: "active"
+              purchase_date: "2024-12-01"
+              price: 50.00
+              seat_number: "A12"
+      responses:
+        '201':
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ticket created successfully"
+                  data:
+                    $ref: '#/components/schemas/Ticket'
+                example:
+                  message: "Ticket created successfully"
+                  data:
+                    user_id: 1
+                    status: "active"
+                    purchase_date: "2024-12-01"
+                    seat_number: "A12"
+                    price: 50.00
+                    event_id: 3
+
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  user_id:
+                    - "The user_id field is required."
+                  price:
+                    - "The price field must be at least 0."
+                  status:
+                    - "The selected status is invalid."
+        '409':
+          description: A conflict occurred
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Conflict: A ticket with the given ID already exists."
+
+  /vieta/{vietaID}/renginys/{renginysID}/bilietas/{bilietasID}:
+    get:
+      summary: Retrieves a specific ticket by ID for a specific event at a specific place
+      tags:
+        - bilietas
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: bilietasID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+              example:
+                id: 1
+                event_id: 3
+                user_id: 1
+                status: "active"
+                purchase_date: "2024-12-01"
+                seat_number: "A12"
+                price: 50.00
+                created_at: "2024-10-18 11:05:08"
+                updated_at: "2024-10-18 11:05:08"
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+    patch:
+      summary: Updates a specific ticket by ID
+      tags:
+        - bilietas
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: bilietasID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdateRequest'
+            example:
+              status: "cancelled"
+              price: 40.00
+      responses:
+        '200':
+          description: Ticket updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Ticket updated successfully"
+        '400':
+          $ref: '#/components/responses/badRequest'
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/unprocessableEntity'
+              example:
+                message: "Validation failed."
+                errors:
+                  price:
+                    - "The price field must be at least 0."
+
+    delete:
+      summary: Deletes a specific ticket by ID
+      tags:
+        - bilietas
+      parameters:
+        - name: vietaID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: renginysID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: bilietasID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Ticket deleted successfully, no content is returned.
+        '404':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    Place:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          maxLength: 191
+        address:
+          type: string
+          maxLength: 191
+        city:
+          type: string
+          maxLength: 191
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 191
+        capacity:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PlaceCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 191
+        address:
+          type: string
+          maxLength: 191
+        city:
+          type: string
+          maxLength: 191
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 191
+        capacity:
+          type: integer
+          minimum: 1
+      required:
+        - name
+        - address
+        - city
+        - postal_code
+        - country
+        - capacity
+
+    PlaceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 191
+        address:
+          type: string
+          maxLength: 191
+        city:
+          type: string
+          maxLength: 191
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 191
+        capacity:
+          type: integer
+          minimum: 1
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          maxLength: 191
+        start_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_date:
+          type: string
+          format: date
+        end_time:
+          type: string
+          format: time
+        place_id:
+          type: integer
+        price:
+          type: number
+          minimum: 0
+        max_tickets:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    EventCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_date:
+          type: string
+          format: date
+        end_time:
+          type: string
+          format: time
+        price:
+          type: number
+          minimum: 0
+        max_tickets:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+      required:
+        - name
+        - start_date
+        - start_time
+        - end_date
+        - end_time
+        - price
+        - max_tickets
+
+    EventUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 191
+        start_date:
+          type: string
+          format: date
+        start_time:
+          type: string
+          format: time
+        end_date:
+          type: string
+          format: date
+        end_time:
+          type: string
+          format: time
+        price:
+          type: number
+          minimum: 0
+        max_tickets:
+          type: integer
+          minimum: 1
+        description:
+          type: string
+          nullable: true
+
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        event_id:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive, cancelled]
+        purchase_date:
+          type: string
+          format: date
+        seat_number:
+          type: string
+          maxLength: 10
+          nullable: true
+        price:
+          type: number
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TicketCreateRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive, cancelled]
+        purchase_date:
+          type: string
+          format: date
+        seat_number:
+          type: string
+          maxLength: 10
+          nullable: true
+        price:
+          type: number
+          minimum: 0
+      required:
+        - user_id
+        - purchase_date
+        - price
+
+    TicketUpdateRequest:
+      type: object
+      properties:
+        user_id:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive, cancelled]
+        purchase_date:
+          type: string
+          format: date
+        seat_number:
+          type: string
+          maxLength: 10
+          nullable: true
+        price:
+          type: number
+          minimum: 0
+
+    unprocessableEntity:
+      type: object
+      properties:
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+
+  responses:
+    badRequest:
+      description: Invalid JSON format
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+            example:
+              message: "Invalid JSON format."
+
+
+
+    ErrorResponse:
+      description: Resource not found or error occurred
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+            example:
+              message: "Resource not found"

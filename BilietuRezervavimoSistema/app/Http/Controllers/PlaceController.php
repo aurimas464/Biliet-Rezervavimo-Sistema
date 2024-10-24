@@ -60,7 +60,7 @@ class PlaceController extends Controller
             $existingPlace = DB::table('places')->where('id', $data['id'])->first();
             if ($existingPlace) {
                 return response()->json([
-                    'message' => 'Conflict: A place with the given placeID already exists.',
+                    'message' => 'Conflict: A place with the given ID already exists.',
                     'id' => $data['id']
                 ], 409);
             }
