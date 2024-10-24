@@ -9,66 +9,52 @@ use Illuminate\Support\Facades\Validator;
 
 class EventController extends Controller
 {
-    public function getAll()
+    public function getAll($vietaID)
     {
-        $events = DB::select('SELECT * FROM events');
+        $events = DB::select('SELECT * FROM events WHERE place_id = ?', [$vietaID]);
         return response()->json($events, 200);
     }
 
-    public function get($id)
+    public function get($vietaID, $renginysID)
     {
-        $event = DB::select('SELECT * FROM events WHERE id = ?', [$id]);
-
+        $event = DB::select('SELECT * FROM events WHERE place_id = ? AND id = ?', [$vietaID, $renginysID]);
         if (empty($event)) {
-            return response()->json(['message' => 'Event not found.'], 404);
+            return response()->json(['message' => 'Resource not found.'], 404);
         }
 
         return response()->json($event[0], 200);
     }
 
-    public function create(Request $request)
+    public function create(Request $request, $vietaID)
     {
-        $requiredFields = [
-            'name',
-            'start_date',
-            'start_time',
-            'end_date',
-            'end_time',
-            'place_id',
-            'price',
-            'max_tickets',
-        ];
-    
-        $missingFields = array_diff($requiredFields, array_keys($request->all()));
-        if (!empty($missingFields)) {
+        $data = json_decode($request->getContent(), true);
+        if (json_last_error() !== JSON_ERROR_NONE || is_null($data)) {
             return response()->json([
-                'message' => 'Bad Request.',
-                'missing_fields' => $missingFields,
+                'message' => 'Invalid JSON format.'
             ], 400);
         }
-    
+
         $validator = Validator::make($request->all(), [
             'id' => 'nullable|integer',
-            'name' => 'string|max:191',
-            'start_date' => 'date',
-            'start_time' => 'date_format:H:i',
-            'end_date' => 'date',
-            'end_time' => 'date_format:H:i',
-            'place_id' => 'exists:places,id',
-            'price' => 'numeric|min:0',
-            'max_tickets' => 'integer|min:1',
+            'name' => 'required|string|max:191',
+            'start_date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_date' => 'required|date',
+            'end_time' => 'required|date_format:H:i',
+            'price' => 'required|numeric|min:0',
+            'max_tickets' => 'required|integer|min:1',
             'description' => 'nullable|string',
         ]);
-    
+
         if ($validator->fails()) {
-            \Log::info('Validation failed', $validator->errors()->toArray());
             return response()->json([
                 'message' => 'Validation failed.',
                 'errors' => $validator->errors(),
             ], 422);
         }
-    
+
         $data = $validator->validated();
+        $data['place_id'] = $vietaID;
 
         if (isset($data['id'])) {
             $existingEvent = DB::table('events')->where('id', $data['id'])->first();
@@ -80,10 +66,9 @@ class EventController extends Controller
             }
 
             $sql = "INSERT INTO events (id, name, start_date, start_time, end_date, end_time, place_id, price, max_tickets, description, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
-
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
             DB::insert($sql, [
-                $data['id'], 
+                $data['id'],
                 $data['name'],
                 $data['start_date'],
                 $data['start_time'],
@@ -94,11 +79,9 @@ class EventController extends Controller
                 $data['max_tickets'],
                 $data['description'] ?? null,
             ]);
-        }
-        else{
+        } else {
             $sql = "INSERT INTO events (name, start_date, start_time, end_date, end_time, place_id, price, max_tickets, description, created_at, updated_at) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
-
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())";
             DB::insert($sql, [
                 $data['name'],
                 $data['start_date'],
@@ -111,75 +94,77 @@ class EventController extends Controller
                 $data['description'] ?? null,
             ]);
         }
-    
+
         return response()->json([
             'message' => 'Event created successfully',
             'data' => $data,
         ], 201);
     }
 
-
-    public function update(Request $request, $id)
+    public function update(Request $request, $vietaID, $renginysID)
     {
-        $event = DB::select('SELECT * FROM events WHERE id = ?', [$id]);
-
-        if (empty($event)) {
-            return response()->json(['message' => 'Event not found.'], 404);
+        $data = json_decode($request->getContent(), true);
+        if (json_last_error() !== JSON_ERROR_NONE || is_null($data)) {
+            return response()->json([
+                'message' => 'Invalid JSON format.'
+            ], 400);
         }
-
-        $validatedData = $request->validate([
+    
+        $event = DB::select('SELECT * FROM events WHERE place_id = ? AND id = ?', [$vietaID, $renginysID]);
+        if (empty($event)) {
+            return response()->json(['message' => 'Resource not found.'], 404);
+        }
+    
+        $validator = Validator::make($request->all(), [
             'name' => 'string|max:191',
             'start_date' => 'date',
             'start_time' => 'date_format:H:i',
             'end_date' => 'date',
             'end_time' => 'date_format:H:i',
-            'place_id' => 'exists:places,id',
             'price' => 'numeric|min:0',
             'max_tickets' => 'integer|min:1',
             'description' => 'nullable|string',
         ]);
-
+    
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+    
+        $validatedData = $validator->validated();
+    
         $sql = "UPDATE events 
-                SET name = ?, start_date = ?, start_time = ?, end_date = ?, end_time = ?, place_id = ?, price = ?, max_tickets = ?, description = ?, updated_at = NOW()
-                WHERE id = ?";
-
+                SET name = ?, start_date = ?, start_time = ?, end_date = ?, end_time = ?, price = ?, max_tickets = ?, description = ?, updated_at = NOW()
+                WHERE place_id = ? AND id = ?";
+    
         DB::update($sql, [
             $validatedData['name'] ?? $event[0]->name,
             $validatedData['start_date'] ?? $event[0]->start_date,
             $validatedData['start_time'] ?? $event[0]->start_time,
             $validatedData['end_date'] ?? $event[0]->end_date,
             $validatedData['end_time'] ?? $event[0]->end_time,
-            $validatedData['place_id'] ?? $event[0]->place_id,
             $validatedData['price'] ?? $event[0]->price,
             $validatedData['max_tickets'] ?? $event[0]->max_tickets,
             $validatedData['description'] ?? $event[0]->description,
-            $id
+            $vietaID,
+            $renginysID
         ]);
-
+    
         return response()->json(['message' => 'Event updated successfully'], 200);
     }
 
-    public function delete($id)
+    public function delete($vietaID, $renginysID)
     {
-        $event = DB::select('SELECT * FROM events WHERE id = ?', [$id]);
-
+        $event = DB::select('SELECT * FROM events WHERE place_id = ? AND id = ?', [$vietaID, $renginysID]);
         if (empty($event)) {
-            return response()->json(['message' => 'Event not found.'], 404);
+            return response()->json(['message' => 'Resource not found.'], 404);
         }
 
-        DB::delete('DELETE FROM events WHERE id = ?', [$id]);
+        DB::delete('DELETE FROM tickets WHERE event_id = ?', [$renginysID]);
+        DB::delete('DELETE FROM events WHERE place_id = ? AND id = ?', [$vietaID, $renginysID]);
 
         return response()->json(null, 204);
-    }
-
-    public function getEventsByPlace($placeId)
-    {
-        $events = DB::select('SELECT * FROM events WHERE place_id = ?', [$placeId]);
-
-        if (empty($events)) {
-            return response()->json(['message' => 'No events found for this place.'], 404);
-        }
-
-        return response()->json($events, 200);
     }
 }
