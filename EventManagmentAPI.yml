@@ -358,6 +358,7 @@ paths:
                 end_time: "02:00"
                 price: 50.00
                 max_tickets: 100
+                description: NULL
                 created_at: "2024-10-18 11:05:08"
                 updated_at: "2024-10-18 11:05:08"
         '404':
@@ -411,8 +412,8 @@ paths:
               example:
                 message: "Validation failed."
                 errors:
-                  price:
-                    - "The price field must be at least 0."
+                  max_tickets:
+                    - "The max_tickets field must be at least 1."
 
     delete:
       summary: Deletes a specific event by ID
