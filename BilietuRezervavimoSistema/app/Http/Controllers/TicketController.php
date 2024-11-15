@@ -66,6 +66,11 @@ class TicketController extends Controller
             ], 422);
         }
 
+        $userExists = DB::table('users')->where('id', $request->user_id)->exists();
+        if (!$userExists) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
         $data = $validator->validated();
         $data['event_id'] = $renginysID;
 
@@ -140,9 +145,16 @@ class TicketController extends Controller
                 'errors' => $validator->errors(),
             ], 422);
         }
-    
+
         $validatedData = $validator->validated();
-    
+
+        if (isset($validatedData['user_id'])) {
+            $userExists = DB::table('users')->where('id', operator: $validatedData['user_id'])->exists();
+            if (!$userExists) {
+                return response()->json(['message' => 'User not found.'], 404);
+            }
+        }
+
         $sql = "UPDATE tickets 
                 SET user_id = ?, status = ?, purchase_date = ?, seat_number = ?, price = ?, updated_at = NOW()
                 WHERE event_id = ? AND id = ?";
