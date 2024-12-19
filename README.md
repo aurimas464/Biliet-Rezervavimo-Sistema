@@ -40,6 +40,7 @@ Renginių Valdymo ir Bilietų Rezervavimo Sistema.
 - **GET** `/api/vieta/{vietaID}/renginys/{renginysID}/bilietas` – Grąžina visų bilietų sąrašą konkrečiam renginiui.
 
 Be to, realizuoti ir registracijos, prisijungimo, atsijungimo ir tokeno atnaujinimo metodai pasitelkus JWT.
+
 ---
 
 ### Projekto funkcijos:
