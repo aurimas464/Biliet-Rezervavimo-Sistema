@@ -12,6 +12,10 @@ Route::post('/refresh', [AuthController::class, 'refresh']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
+Route::get('/test', function () {
+    return response()->json(['message' => 'API is working']);
+});
+
 // Guest Routes
 Route::middleware(['checkToken', 'role:0'])->group(function () {
     Route::get('/vieta', [PlaceController::class, 'getAll']);

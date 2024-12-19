@@ -5,14 +5,116 @@ info:
   version: 1.0.0
 
 servers:
-  - url: http://localhost:8000/api
+  - url: https://eventmanagerapi-brbfd9g2cmgkg6cr.norwayeast-01.azurewebsites.net/api
+
+
+security:
+  - BearerAuth: []
 
 paths:
+
+  /register:
+    post:
+      summary: Register a new user
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+                role:
+                  type: string
+                  enum: [guest, user, organizer, admin]
+              required:
+                - name
+                - email
+                - password
+                - password_confirmation
+            example:
+              name: "Jonas"
+              email: "Jonas@example.com"
+              password: "passpasspass"
+              password_confirmation: "passpasspass"
+              role: 1
+      responses:
+        '201':
+          description: User registered successfully
+        '422':
+          description: Validation failed
+  /login:
+    post:
+      summary: Login a user
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+            example:
+              email: "Jonas@example.com"
+              password: "passpasspass"
+      responses:
+        '200':
+          description: Login successful
+        '401':
+          description: Unauthorized
+
+  /logout:
+    post:
+      summary: Logout the current user
+      security:
+        - BearerAuth: []
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Unauthorized
+
+  /refresh:
+    post:
+      summary: Refresh the JWT access token
+      security:
+        - BearerAuth: []
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Token refreshed successfully
+        '401':
+          description: Refresh token not provided or expired   
+
   /vieta:
     get:
       summary: Retrieves a list of all places
       tags:
         - vieta
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: A list of places
@@ -45,6 +147,8 @@ paths:
       summary: Adds a new place
       tags:
         - vieta
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -112,6 +216,8 @@ paths:
       summary: Get a specific place by ID
       tags:
         - vieta
+      security:
+        - BearerAuth: []
       parameters:
         - name: vietaID
           in: path
@@ -140,6 +246,8 @@ paths:
 
     patch:
       summary: Update a specific place by ID
+      security:
+        - BearerAuth: []
       tags:
         - vieta
       parameters:
@@ -185,6 +293,8 @@ paths:
                     - "The capacity must be at least 1."
     delete:
       summary: Delete a specific place by ID
+      security:
+        - BearerAuth: []
       tags:
         - vieta
       parameters:
@@ -202,6 +312,8 @@ paths:
   /vieta/{vietaID}/renginys:
     get:
       summary: Retrieves a list of all events for a specific place
+      security:
+        - BearerAuth: []
       tags:
         - renginys
       parameters:
@@ -249,6 +361,8 @@ paths:
 
     post:
       summary: Adds a new event to a specific place
+      security:
+        - BearerAuth: []
       tags:
         - renginys
       parameters:
@@ -328,6 +442,8 @@ paths:
   /vieta/{vietaID}/renginys/{renginysID}:
     get:
       summary: Retrieves a specific event by ID for a place
+      security:
+        - BearerAuth: []
       tags:
         - renginys
       parameters:
@@ -366,6 +482,8 @@ paths:
 
     patch:
       summary: Updates a specific event by ID
+      security:
+        - BearerAuth: []
       tags:
         - renginys
       parameters:
@@ -417,6 +535,8 @@ paths:
 
     delete:
       summary: Deletes a specific event by ID
+      security:
+        - BearerAuth: []
       tags:
         - renginys
       parameters:
@@ -441,6 +561,8 @@ paths:
       summary: Retrieves a list of all tickets for a specific event at a specific place
       tags:
         - bilietas
+      security:
+        - BearerAuth: []
       parameters:
         - name: vietaID
           in: path
@@ -485,6 +607,8 @@ paths:
 
     post:
       summary: Adds a new ticket to a specific event at a specific place
+      security:
+        - BearerAuth: []
       tags:
         - bilietas
       parameters:
@@ -566,6 +690,8 @@ paths:
       summary: Retrieves a specific ticket by ID for a specific event at a specific place
       tags:
         - bilietas
+      security:
+        - BearerAuth: []
       parameters:
         - name: vietaID
           in: path
@@ -606,6 +732,8 @@ paths:
       summary: Updates a specific ticket by ID
       tags:
         - bilietas
+      security:
+        - BearerAuth: []
       parameters:
         - name: vietaID
           in: path
@@ -662,6 +790,8 @@ paths:
       summary: Deletes a specific ticket by ID
       tags:
         - bilietas
+      security:
+        - BearerAuth: []
       parameters:
         - name: vietaID
           in: path
@@ -684,8 +814,68 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorResponse'
 
+  /events/my-events:
+    get:
+      summary: Get events created by the authenticated user
+      tags:
+        - events
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of user's events
+        '401':
+          description: Unauthorized
+
+  /tickets/my-events:
+    get:
+      summary: Get tickets owned by the authenticated user
+      tags:
+        - tickets
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of user's tickets
+        '401':
+          description: Unauthorized
+
 components:
   schemas:
+
+    AuthLogin:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+        - email
+        - password
+
+    AuthRegister:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        password_confirmation:
+          type: string
+        role:
+          type: integer
+          enum: [guest, user, organizer, admin]
+      required:
+        - name
+        - email
+        - password
+        - password_confirmation
+
     Place:
       type: object
       properties:
@@ -978,3 +1168,9 @@ components:
                 type: string
             example:
               message: "Resource not found"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

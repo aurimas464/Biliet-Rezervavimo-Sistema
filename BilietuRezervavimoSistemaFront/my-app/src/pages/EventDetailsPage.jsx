@@ -60,8 +60,17 @@ const EventDetailsPage = () => {
             const countResponse = await api.get(`/vieta/${placeID}/renginys/${eventID}/ticket-count`, { withCredentials: true });
             const { current_ticket_count, max_tickets } = countResponse.data;
     
+            const now = new Date();
+            const eventStartDate = new Date(`${event.start_date}T${event.start_time}`);
+            
+            if (now >= eventStartDate) {
+                setNotification('Tickets can no longer be purchased as the event has already started');
+                setTimeout(() => setNotification(''), 3000); // Clear notification after 3 seconds
+                return;
+            }
+
             if (current_ticket_count >= max_tickets) {
-                setNotification('Sorry, this event has reached its maximum ticket capacity.');
+                setNotification('Sorry, this event has reached its maximum ticket capacity');
                 setTimeout(() => setNotification(''), 3000); // Clear notification after 3 seconds
                 return;
             }

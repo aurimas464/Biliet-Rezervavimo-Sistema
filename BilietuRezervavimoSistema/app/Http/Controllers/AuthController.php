@@ -103,11 +103,11 @@ class AuthController extends Controller
                 60,
                 '/',
                 null,
-                false,
+                true,
                 true,
                 false,
-                'Lax'
-            )
+                'None'
+                )
         );
     }
 
@@ -181,11 +181,11 @@ class AuthController extends Controller
                 60,
                 '/',
                 null,
-                false,
+                true,
                 true,
                 false,
-                'Lax'
-            )
+                'None'
+                )
         );
     }
 

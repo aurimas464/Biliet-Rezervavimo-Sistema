@@ -71,7 +71,8 @@ const EditEvent = ({ event, onClose, refreshEvents, showSuccessMessage, placeID 
     
     const handleSubmit = async (e) => {
         e.preventDefault();
-    
+        if (!validateDates()) return;
+
         const sanitizedData = {
             ...eventData,
             start_time: sanitizeTime(eventData.start_time),
