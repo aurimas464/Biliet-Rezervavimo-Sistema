@@ -39,6 +39,8 @@ Renginių Valdymo ir Bilietų Rezervavimo Sistema.
 - **DELETE** `/api/vieta/{vietaID}/renginys/{renginysID}/bilietas/{bilietasID}` – Pašalina bilietą.
 - **GET** `/api/vieta/{vietaID}/renginys/{renginysID}/bilietas` – Grąžina visų bilietų sąrašą konkrečiam renginiui.
 
+Be to, realizuoti ir registracijos, prisijungimo, atsijungimo ir tokeno atnaujinimo metodai pasitelkus JWT.
+
 ---
 
 ### Projekto funkcijos:
@@ -49,3 +51,7 @@ Renginių Valdymo ir Bilietų Rezervavimo Sistema.
 - Parašyta **OpenAPI specifikacija** kiekvienam API metodui. Specifikacijos pateiktos projekto saugykloje esančiame `.yaml` faile, kurį galima peržiūrėti naudojant tokias priemones kaip **Swagger UI**.
 - Užtikrinti tinkami **HTTP būsenos kodai** ir atsakymai.
 - Parengta demonstracinė kolekcija pasinaudojus **Postman**, kurioje demonstruojama, kaip veikia 15 API metodų.
+
+### Svetainė ir įkėlimas į debesiją:
+- API naudojimui sukurta interaktyvi internetinė aplikacija naudojant React biblioteką. Ši aplikacija leidžia vartotojams prisijungti prie sistemos, peržiūrėti renginius, pirkti bilietus, stebėti bilietų statusą ir tvarkyti renginius.
+- Projekto API buvo įkelta į Azure Cloud platformą, siekiant užtikrinti jos prieinamumą internetu ir pasiruošti produkciniam naudojimui. Naudota saugi autentifikacija per JWT ir optimizuota duomenų bazės struktūra.
