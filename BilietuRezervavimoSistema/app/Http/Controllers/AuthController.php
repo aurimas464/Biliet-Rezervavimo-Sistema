@@ -15,6 +15,7 @@ use App\Enums\UserRole;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;           
 
 class AuthController extends Controller
 {
@@ -102,10 +103,10 @@ class AuthController extends Controller
                 60,
                 '/',
                 null,
-                env('APP_ENV') !== 'local',
+                false,
                 true,
                 false,
-                env('SESSION_SAME_SITE', 'lax')
+                'Lax'
             )
         );
     }
@@ -114,6 +115,9 @@ class AuthController extends Controller
     {
         // Retrieve the refresh token from the cookie
         $refreshToken = $request->cookie('refresh_token');
+
+        Log::warning($refreshToken);
+
 
         if (!$refreshToken) {
             return response()->json(['message' => 'Refresh token not provided'], 401);
@@ -134,6 +138,7 @@ class AuthController extends Controller
             LIMIT 1
         ", [$user->id]);
 
+
         if (!$session) {
             return response()->json(['message' => 'Session expired or invalid'], 401);
         }
@@ -144,6 +149,8 @@ class AuthController extends Controller
         // Generate a new refresh token and set new expiration dates
         $newRefreshToken = bin2hex(random_bytes(40));
         $newRefreshTokenExpiresAt = Carbon::now()->addHours(5); // 5 hours
+        
+        //$newAccessTokenExpiresAt = Carbon::now()->addSecond();
         $newAccessTokenExpiresAt = Carbon::now()->addMinutes(10); // 10 minutes
 
         // Update the session in the database
@@ -174,10 +181,10 @@ class AuthController extends Controller
                 60,
                 '/',
                 null,
-                env('APP_ENV') !== 'local',
+                false,
                 true,
                 false,
-                env('SESSION_SAME_SITE', 'lax')
+                'Lax'
             )
         );
     }

@@ -6,6 +6,10 @@ use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Endroid\QrCode\Builder\Builder;
+use Endroid\QrCode\Encoding\Encoding;
+use Illuminate\Support\Facades\Response;
+use App\Enums\UserRole;
 
 class TicketController extends Controller
 {
@@ -20,17 +24,96 @@ class TicketController extends Controller
         return response()->json($tickets, 200);
     }
 
-    public function get($vietaID, $renginysID, $bilietasID)
+    public function getTicketCount($vietaID, $renginysID)
     {
         $event = DB::select('SELECT * FROM events WHERE id = ? AND place_id = ?', [$renginysID, $vietaID]);
         if (empty($event)) {
             return response()->json(['message' => 'Event not found for the specified place.'], 404);
         }
+    
+        $ticketCount = DB::table('tickets')
+            ->where('event_id', $renginysID)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+    
+        return response()->json([
+            'current_ticket_count' => $ticketCount,
+            'max_tickets' => $event[0]->max_tickets,
+        ], 200);
+    }
+
+    public function getMyTickets(Request $request)
+    {
+        // Get the authenticated user
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 401);
+        }
+    
+        $userId = $user->id;
+    
+        // Fetch tickets owned by the user, including place and event details
+        $tickets = DB::table('tickets')
+            ->join('events', 'tickets.event_id', '=', 'events.id')
+            ->join('places', 'events.place_id', '=', 'places.id')
+            ->where('tickets.user_id', $userId)
+            ->select(
+                'tickets.id as ticketID',
+                'tickets.status',
+                'tickets.seat_number',
+                'places.id as placeID',
+                'places.name as place_name',
+                'places.address',
+                'places.city',
+                'places.postal_code',
+                'places.country',
+                'events.id as eventID',
+                'events.name as event_name',
+                'events.start_date',
+                'events.start_time',
+                'events.end_date',
+                'events.end_time'
+            )
+            ->get();
+    
+        // Return the structured response
+        return response()->json($tickets, 200);
+    }
+
+    public function get($vietaID, $renginysID, $bilietasID)
+    {
+        $user = request()->user(); // Retrieve the authenticated user from the request
+    
+        // Check if the event exists and belongs to the specified place
+        $event = DB::select('SELECT * FROM events WHERE id = ? AND place_id = ?', [$renginysID, $vietaID]);
+        if (empty($event)) {
+            return response()->json(['message' => 'Event not found for the specified place.'], 404);
+        }
+    
+        // Check if the ticket exists for the specified event
         $ticket = DB::select('SELECT * FROM tickets WHERE event_id = ? AND id = ?', [$renginysID, $bilietasID]);
         if (empty($ticket)) {
             return response()->json(['message' => 'Resource not found.'], 404);
         }
-
+    
+        // Role-based logic
+        if ($user->role == UserRole::USER) {
+            // Check if the ticket belongs to the authenticated user
+            if ($ticket[0]->user_id != $user->id) {
+                return response()->json(['message' => 'Forbidden: Access denied.'], 403);
+            }
+        } elseif ($user->role == UserRole::ORGANIZER) {
+            // Check if the event belongs to the authenticated organizer
+            $organizerEvent = DB::select('SELECT * FROM events WHERE id = ? AND user_id = ?', [$renginysID, $user->id]);
+            if (empty($organizerEvent)) {
+                if ($ticket[0]->user_id != $user->id) {
+                    return response()->json(['message' => 'Forbidden: Access denied.'], 403);
+                }
+                return response()->json(['message' => 'Forbidden: Access denied.'], 403);
+            }
+        }
+    
+        // Return the ticket if the user has access
         return response()->json($ticket[0], 200);
     }
 
@@ -112,6 +195,7 @@ class TicketController extends Controller
             'data' => $data,
         ], 201);
     }
+
     public function update(Request $request, $vietaID, $renginysID, $bilietasID)
     {
         $data = json_decode($request->getContent(), true);

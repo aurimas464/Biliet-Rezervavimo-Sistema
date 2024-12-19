@@ -16,6 +16,7 @@ class CreateEventsTable extends Migration
             $table->date('end_date');
             $table->time('end_time');
             $table->foreignId('place_id')->constrained('places')->onDelete(action: 'cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->decimal('price', 8, 2);
             $table->integer('max_tickets')->unsigned();
             $table->text('description')->nullable();

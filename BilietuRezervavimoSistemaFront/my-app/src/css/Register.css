@@ -1,0 +1,115 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+.background-image {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url('../images/login_background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: -1;
+    animation: moveBackground 10s ease-in-out infinite alternate;
+}
+
+@keyframes moveBackground {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.1);
+    }
+}
+
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    position: relative;
+    z-index: 2;
+}
+
+.register-box {
+    background: #000000;
+    opacity: 0.90;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    padding: 25px;
+    width: 90%;
+    max-width: 600px;
+    text-align: center;
+    color: #797676;
+    z-index: 1;
+}
+
+.register-box h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #2f20ff;
+}
+
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #d3d3d3;
+}
+
+input,
+select {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    display: block;
+}
+
+button {
+    margin-top: 15px;
+    width: 45%;
+    padding: 10px;
+    background: #2f20ff;
+    border: none;
+    color: white;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-block;
+}
+
+button.secondary-button {
+    background: #6e7781;
+}
+
+button:hover {
+    background: #12039c;
+}
+
+button.secondary-button:hover {
+    background: #4c5358;
+}
+
+.button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
